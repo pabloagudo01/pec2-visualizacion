@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Tres visualizaciones interactivas con datos abiertos: treemap de emisiones de CO₂, Gantt de proyectos europeos y envolvente convexa de estaciones meteorológicas.">
+<title>PEC 2 · Tres técnicas de visualización de datos</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --ink: #111827;
+  --muted: #4b5563;
+  --line: #dbe3ee;
+  --accent: #1d4ed8;
+  --accent-soft: #eff6ff;
+  --shadow: 0 10px 30px rgba(15, 23, 42, .06);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+.site-header { padding: 30px 0 18px; }
+.breadcrumb a { color: var(--accent); text-decoration: none; font-size: .9rem; font-weight: 650; }
+.breadcrumb a:hover { text-decoration: underline; }
+.kicker {
+  margin: 16px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+  font-size: .76rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 3.2vw, 2.65rem);
+  line-height: 1.12;
+  letter-spacing: -.025em;
+  max-width: 980px;
+}
+.lead { margin: 13px 0 0; max-width: 900px; color: var(--muted); font-size: 1.06rem; }
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 14px 16px 8px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.chart-caption { font-size: .88rem; color: var(--muted); padding: 4px 4px 8px; }
+.notes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 22px 0 8px;
+}
+.notes article {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.notes h2 { font-size: 1rem; margin: 0 0 8px; letter-spacing: -.01em; }
+.notes p, .notes li { color: var(--muted); font-size: .94rem; }
+.notes p:last-child, .notes ul:last-child { margin-bottom: 0; }
+.notes ul { margin: 0; padding-left: 1.15rem; }
+a { color: var(--accent); }
+a:hover { text-decoration: underline; }
+code {
+  background: #eef2f7;
+  padding: .08rem .3rem;
+  border-radius: 4px;
+  font-size: .9em;
+}
+.site-footer {
+  margin-top: 30px;
+  padding: 22px 0 42px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .9rem;
+}
+.site-footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.noscript {
+  margin: 16px;
+  padding: 12px 16px;
+  border: 1px solid #f59e0b;
+  background: #fffbeb;
+  border-radius: 8px;
+  color: #78350f;
+}
+/* Índice */
+.index-hero { padding: 54px 0 26px; }
+.index-hero .lead { font-size: 1.12rem; }
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+.hero-meta span {
+  display: inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 999px;
+  font-size: .82rem;
+  color: var(--muted);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 8px 0 26px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow);
+}
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.card .num { font-size: .8rem; font-weight: 850; color: var(--accent); letter-spacing: .08em; }
+.card .tag {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  background: #f1f5f9;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.card h2 { margin: 12px 0 8px; font-size: 1.28rem; letter-spacing: -.015em; }
+.card p { color: var(--muted); font-size: .95rem; margin: 0 0 10px; }
+.card .card-stat { color: var(--ink); font-weight: 650; font-size: .87rem; }
+.card-link { margin-top: auto; padding-top: 12px; font-weight: 750; text-decoration: none; }
+.card-link:hover { text-decoration: underline; }
+.index-section {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 18px 0;
+}
+.index-section h2 { margin: 0 0 12px; font-size: 1.18rem; }
+.index-section p, .index-section li { color: var(--muted); font-size: .95rem; }
+.index-section ul { margin: 8px 0 0; padding-left: 1.15rem; }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+@media (max-width: 900px) {
+  .cards, .two-col { grid-template-columns: 1fr; }
+  .index-hero { padding-top: 32px; }
+}
+@media (max-width: 760px) {
+  .notes { grid-template-columns: 1fr; }
+  .chart-card { padding: 8px; border-radius: 12px; }
+  .site-header { padding-top: 20px; }
+}
+</style>
+</head>
+<body>
+
+<header class="index-hero">
+  <div class="wrap">
+    <p class="kicker">PEC 2 · Visualización de datos</p>
+    <h1>Tres técnicas, tres preguntas</h1>
+    <p class="lead">Tres visualizaciones interactivas construidas con datos abiertos verificables: un treemap para jerarquías y magnitudes, un diagrama de Gantt para intervalos temporales reales y una envolvente convexa para geometría y distribución espacial.</p>
+    <div class="hero-meta">
+      <span>Python + Plotly</span>
+      <span>HTML estático, sin backend</span>
+      <span>Datos de 2023–2027</span>
+      <span>Pruebas con pytest</span>
+    </div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="cards">
+
+      <article class="card">
+        <div class="card-top"><span class="num">01</span><span class="tag">Jerarquía</span></div>
+        <h2>Treemap de emisiones de CO₂</h2>
+        <p>Área proporcional a las emisiones totales y color según las emisiones por habitante, agrupadas por región del Banco Mundial.</p>
+        <p class="card-stat">201 economías · 7 regiones · 37.483 Mt CO₂e (2023)</p>
+        <a class="card-link" href="treemap.html">Abrir visualización →</a>
+      </article>
+      <article class="card">
+        <div class="card-top"><span class="num">02</span><span class="tag">Tiempo</span></div>
+        <h2>Gantt de proyectos Horizonte Europa</h2>
+        <p>Intervalos reales de inicio y fin de los proyectos de la convocatoria de espacio, coloreados por tipo de acción.</p>
+        <p class="card-stat">26 proyectos · 1 CSA / 7 IA / 18 RIA</p>
+        <a class="card-link" href="gantt.html">Abrir visualización →</a>
+      </article>
+      <article class="card">
+        <div class="card-top"><span class="num">03</span><span class="tag">Espacio</span></div>
+        <h2>Envolvente convexa de estaciones MeteoCat</h2>
+        <p>Geometría de la red XEMA en una proyección UTM: vértices, estaciones interiores y área del polígono.</p>
+        <p class="card-stat">189 estaciones · 14 vértices · 36.542 km²</p>
+        <a class="card-link" href="convex_hull.html">Abrir visualización →</a>
+      </article>
+  </section>
+
+  <section class="index-section">
+    <div class="two-col">
+      <div>
+        <h2>Qué se ha construido</h2>
+        <p>Las tres páginas son archivos HTML independientes que incluyen Plotly en el propio archivo. No necesitan Python en el servidor y funcionan en un alojamiento estático. Los enlaces son relativos, de modo que el sitio puede publicarse en la raíz de un dominio o bajo una ruta de proyecto de GitHub Pages.</p>
+        <p>La preparación de datos, el cálculo geométrico, la visualización y la validación están separados en módulos de <code>src/</code> y scripts de <code>scripts/</code>.</p>
+      </div>
+      <div>
+        <h2>Reproducibilidad</h2>
+        <ul>
+          <li><code>python scripts/download_data.py</code>: descarga las fuentes.</li>
+          <li><code>python scripts/build_visualizations.py</code>: genera datos procesados y HTML.</li>
+          <li><code>pytest -q</code>: ejecuta las pruebas.</li>
+          <li><code>python scripts/validate_outputs.py</code>: comprueba los archivos publicados.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="index-section">
+    <h2>Fuentes de datos</h2>
+    
+      <ul>
+        <li><strong>Banco Mundial</strong>, <em>World Development Indicators</em>: emisiones de CO₂ totales y per cápita (AR5), 2023. Indicadores <code>EN.GHG.CO2.MT.CE.AR5</code> y <code>EN.GHG.CO2.PC.CE.AR5</code>. Licencia CC BY 4.0. <a href="https://data.worldbank.org/indicator/EN.GHG.CO2.MT.CE.AR5" target="_blank" rel="noopener">Ficha del indicador</a>.</li>
+        <li><strong>CORDIS</strong>, <em>EU research projects under Horizon Europe (2021-2027)</em>. Oficina de Publicaciones de la Unión Europea. Convocatoria <code>HORIZON-CL4-2022-SPACE-01</code>. DOI <a href="https://doi.org/10.2906/112117098108/20" target="_blank" rel="noopener">10.2906/112117098108/20</a>. Aviso de reutilización de la Comisión Europea.</li>
+        <li><strong>MeteoCat</strong>, <em>Metadatos de las estaciones meteorológicas automáticas (XEMA)</em>, Generalitat de Catalunya. <a href="https://analisi.transparenciacatalunya.cat/d/yqwd-vj5e" target="_blank" rel="noopener">Conjunto de datos</a> · <a href="https://www.meteo.cat/wpweb/avis-legal/" target="_blank" rel="noopener">Aviso legal</a>.</li>
+      </ul>
+      <p>Fecha de consulta: 2026-10-22. Las URL, licencias y cifras se comprobaron antes de construir el sitio. No se usan datos simulados.</p>
+    
+  </section>
+
+  <section class="index-section">
+    <h2>Alcance y limitaciones</h2>
+    
+      <ul>
+        <li><strong>Treemap:</strong> el área representa emisiones totales y el color, emisiones per cápita. El cruce dejó 301 registros y se excluyeron 100: agregados regionales o mundiales, grupos de ingreso sin región y economías sin dato o con emisión cero; no se imputaron. El color satura en 25 t/hab para que los valores extremos no oculten el resto.</li>
+        <li><strong>Gantt:</strong> cada barra es el intervalo oficial de un proyecto, no una fase inventada. Solo se incluyen los 26 proyectos de la convocatoria HORIZON-CL4-2022-SPACE-01 presentes en la exportación; no hay relaciones de precedencia.</li>
+        <li><strong>Envolvente convexa:</strong> el área (36.542 km²) es una superficie proyectada, no una medida de cobertura. Incluye mar y zonas sin estaciones y depende de los puntos extremos.</li>
+        <li><strong>General:</strong> las cifras describen los datos descargados en la fecha de consulta; no implican causalidad. El proyecto no se ha publicado en Internet desde este entorno.</li>
+      </ul>
+    
+  </section>
+
+  <section class="index-section">
+    <h2>Documentación académica</h2>
+    <p>La documentación completa está en el repositorio, dentro de <code>docs/</code>: <code>sources.md</code> (fuentes y licencias), <code>methodology.md</code> (método y limitaciones), <code>ai_usage.md</code> (registro de asistencia de IA), <code>ai_declaration_template.md</code> (declaración para revisar y firmar) y <code>video_script.md</code> (guion del vídeo).</p>
+    <p>Generado el 22/10/2026. Este sitio no se ha publicado en Internet desde el entorno de desarrollo.</p>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <span>PEC 2 · Visualización de datos</span>
+    <span>Datos abiertos: Banco Mundial · CORDIS · MeteoCat</span>
+  </div>
+</footer>
+
+</body>
+</html>
